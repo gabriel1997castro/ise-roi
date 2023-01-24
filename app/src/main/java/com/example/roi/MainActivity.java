@@ -22,6 +22,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -155,19 +156,21 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         }
 
         Rect[] facesArray = faces.toArray();
-        for (int i = 0; i < facesArray.length; i++)
-            Imgproc.rectangle(mRgbaT, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
+        int amountOfFaces = facesArray.length > 0 ? 1: 0;
+
+        for (int i = 0; i < amountOfFaces; i++) {
+            Rect face = facesArray[i];
+            Point br = face.br();
+            Point tl = face.tl();
+
+            // get only 30% from top to bottom - only forehead
+            br.y = tl.y + face.height*0.3;
+            Imgproc.rectangle(mRgbaT, tl, br, new Scalar(0, 255, 0, 255), 3);
+        }
 
         return mRgbaT;
 
 
-//        Mat src = inputFrame.gray();
-//
-//        Mat cannyEdges = new Mat();
-//
-//        Imgproc.Canny(src, cannyEdges, 10, 100);
-//
-//        return cannyEdges;
     }
 
     @Override
