@@ -76,8 +76,10 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         setContentView(R.layout.activity_main);
 
         mOpenCvCameraView = (JavaCameraView) findViewById(R.id.MyView);
+        mOpenCvCameraView.setCameraIndex(1);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
 
         baseLoaderCallback = new BaseLoaderCallback(this) {
             @Override
@@ -117,6 +119,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
             // Load the cascade classifier
             cascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+
         } catch (Exception e) {
             Log.e("OpenCVActivity", "Error loading cascade", e);
         }
@@ -142,7 +145,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mat1 = inputFrame.rgba();
         Mat mRgbaT = mat1.t();
-        Core.flip(mat1.t(), mRgbaT, 1);
+        // Flip the image of the frontal camera, because it starts upside down
+        Core.flip(mat1.t(), mRgbaT, -1);
         Imgproc.resize(mRgbaT, mRgbaT, mat1.size());
 
         Imgproc.cvtColor(mRgbaT, mRgbaT, Imgproc.COLOR_RGBA2RGB);
@@ -155,13 +159,19 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
                     new Size(absoluteFaceSize, absoluteFaceSize), new Size());
         }
 
+        Rect roiRect;
+        Mat roiMat;
         Rect[] facesArray = faces.toArray();
-        int amountOfFaces = facesArray.length > 0 ? 1: 0;
+        if(facesArray.length > 0) {
+            Rect face = getNearestFace(facesArray);
 
-        for (int i = 0; i < amountOfFaces; i++) {
-            Rect face = facesArray[i];
             Point br = face.br();
             Point tl = face.tl();
+
+            int SQUARE_SIZE = (int) (face.height*0.3);
+            roiRect = new Rect((int) face.tl().x+face.width-SQUARE_SIZE/2, (int) face.tl().y, SQUARE_SIZE, SQUARE_SIZE);
+            roiMat = new Mat(mRgbaT, roiRect);
+            Log.i(TAG, "ROI detected ------> roiMat: " + roiMat + " RoiRect: " + roiRect);
 
             // get only 30% from top to bottom - only forehead
             br.y = tl.y + face.height*0.3;
@@ -180,6 +190,16 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
             mOpenCvCameraView.disableView();
         }
 
+    }
+
+    private Rect getNearestFace(Rect[] facesArray) {
+        Rect biggerFace = facesArray[0];
+//        for(int i = 0; i < facesArray.length; i++) {
+//            if(i > 0 && (facesArray[i].width * facesArray[i].height > facesArray[i-1].width *facesArray[i-1].height)) {
+//                biggerFace = facesArray[i];
+//            }
+//        }
+        return biggerFace;
     }
 
 
