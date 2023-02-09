@@ -45,7 +45,6 @@ import org.opencv.objdetect.CascadeClassifier;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,6 +58,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     BaseLoaderCallback baseLoaderCallback;
     private CascadeClassifier cascadeClassifier;
     private int absoluteFaceSize;
+
+    private List<Double> results = new ArrayList<Double>(10);
 
 //    BaseLoaderCallback mCallBack = new BaseLoaderCallback(this) {
 //        @Override
@@ -96,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         mOpenCvCameraView.setCameraIndex(1);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        results.clear();
 
 
         baseLoaderCallback = new BaseLoaderCallback(this) {
@@ -363,16 +366,31 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
                 double redMax = Collections.max(zzRed);
                 double blueMax = Collections.max(zzBlue);
-                System.out.println("hello");
                 double redMean = calculateAverage(zzRed);
                 double blueMean = calculateAverage(zzBlue);
 
                 double r = (redMax / redMean) / (blueMax / blueMean);
 
-                double k = 10.5;
+                double k =2.5;
                 double spo2 = 100.0 - r * k;
+                if(results.size() < 10) {
+                    results.add(spo2);
+                } else {
+                    results.remove(0);
+                    results.add(spo2);
+                }
 
-                String text = String.format("SPO2: %.2f %%", spo2);
+                double sum = 0;
+                int count = 0;
+                for (Double value : results) {
+                    if (value != null) {
+                        sum += value;
+                        count++;
+                    }
+                }
+                double average = (count > 0) ? sum / count : 0;
+
+                String text = String.format("SPO2: %.2f %%", average);
                 Imgproc.putText(mRgbaT,text,new Point(mRgbaT.cols()/2-300,mRgbaT.rows()-40),Core.FONT_ITALIC,2.0,new Scalar(255,255,255),2);
 //
             }
